@@ -1,0 +1,79 @@
+/* 1. Altere a tabela de débitos para corrigir o campo situacao_debito. Se o débito estiver vencido e não for 'Negociado' nem 'Pago', informe 'Atrasado' */
+
+UPDATE DEBITOS d
+   SET d.SITUACAO_DEBITO = 'Atrasado'
+ WHERE d.DATAVENCIMENTO < CURRENT_DATE
+   AND d.SITUACAO_DEBITO NOT IN ('Negociado', 'Pago')
+
+/* 2. Altere a tabela de débitos para corrigir o campo situacao _debito. Se o débito não estiver vencido e não for 'Pago', informe 'Pendente' */
+
+UPDATE DEBITOS d
+   SET d.SITUACAO_DEBITO = 'Pendente'
+ WHERE d.DATAVENCIMENTO >= CURRENT_DATE
+   AND d.SITUACAO_DEBITO != 'Pago' 
+
+/* 3. Altere a tabela de débitos para corrigir o campo data de vencimento. Se o débito estiver com a situação 'Negociado', altere o ano da data de vencimento para ano - 5 anos */
+
+UPDATE DEBITOS d
+   SET d.DATAVENCIMENTO = DATEADD(YEAR, -5, d.DATAVENCIMENTO)
+ WHERE d.SITUACAO_DEBITO = 'Negociado' 
+
+/* 4. Selecione o nome, e-mail e telefone de todas as pessoas */
+
+SELECT p.NOME
+     , p.EMAIL
+     , p.TELEFONE 
+  FROM PESSOA p 
+
+/* 5. Liste os produtos com preço unitário acima de R$ 100 */
+
+SELECT *
+  FROM PRODUTO p
+ WHERE p.PRECO_UNITARIO > 100
+
+/* 6. Retorne todas as vendas realizadas em uma determinada data */
+
+SELECT *
+  FROM VENDA v
+ WHERE v.DATA_VENDA = '2022-04-01'
+
+/* 7. Mostre o nome, a data de nascimento e a idade dos fornecedores que não têm produtos em estoque */
+
+   SELECT p1.NOME
+        , p1.DATA_NASCIMENTO
+        , (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM p1.DATA_NASCIMENTO)) AS IDADE
+     FROM FORNECEDOR f 
+LEFT JOIN PESSOA p1     ON p1.ID_PESSOA      = F.ID_PESSOA 
+LEFT JOIN PRODUTO p2   ON p2.ID_FORNECEDOR = f.ID_FORNECEDOR 
+    WHERE p2.QUANTIDADE_ESTOQUE = 0
+       OR f.ID_FORNECEDOR NOT IN (SELECT p3.ID_FORNECEDOR 
+                                    FROM PRODUTO p3 
+                                   WHERE p3.ID_FORNECEDOR = f.ID_FORNECEDOR)
+
+/* 8. Liste os clientes que já realizaram compras com débitos vencidos */
+
+SELECT *
+  FROM CLIENTE c 
+ WHERE
+
+/* 10. Selecione os 10 maiores devedores trazendo código, nome, idade e a soma total dos débitos vencidos e a soma total dos débitos pagos */
+
+SELECT c.ID_CLIENTE
+     , p.NOME
+     , (EXTRACT(YEAR FROM CURRENT_DATE) - EXTRACT(YEAR FROM p.DATA_NASCIMENTO)) AS IDADE
+     , (SELECT SUM(d.)
+       FROM DEBITOS d
+       WHERE d.ID_CLIENTE = c.ID_CLIENTE
+       AND d.DATAVENCIMENTO < CURRENT_DATE
+       AND d.SITUACAO_DEBITO != 'Pago') AS SOMA_DEBITOS_VENCIDOS,
+       (SELECT SUM(d.)
+       FROM DEBITOS d
+       WHERE d.ID_CLIENTE = c.ID_CLIENTE
+       AND d.SITUACAO_DEBITO = 'Pago') AS SOMA_DEBITOS_PAGOS
+  FROM CLIENTE c, PESSOA p
+
+/* 11. Atualize o preço unitário de todos os produtos com estoque inferior a 10 unidades para mais 10% */
+
+UPDATE PRODUTO p
+   SET p.PRECO_UNITARIO = p.PRECO_UNITARIO * 1.10
+ WHERE p.QUANTIDADE_ESTOQUE < 10
